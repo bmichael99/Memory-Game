@@ -1,6 +1,4 @@
 import { useEffect, useState, useRef } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
@@ -8,7 +6,7 @@ function App() {
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(0);
   const [cards, setCards] = useState([]);
-  const pokemonSpriteURLs = [];
+  const [loading, setLoading] = useState(false);
   
 
 
@@ -17,26 +15,24 @@ function App() {
   }
 
   async function useAPI(){
+    myRefs.current = {};
     let offset = randomNum();
-    
-    fetch('https://pokeapi.co/api/v2/pokemon?limit=10&offset=' + offset)
-      .then(response => {
-        response.json().then(data => {
+    const pokemonSpriteURLs = [];
 
-          const fetches = data.results.map((pokemon) => {
-            return fetch(pokemon.url)
-              .then(response => response.json())
-              .then(pokeData => {
-                console.log(pokeData.sprites.front_default);
-                pokemonSpriteURLs.push(pokeData.sprites.front_default);
-              });
+      const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10&offset=' + offset);
+      const data = await response.json();
+      setLoading(true);
+      const fetches = data.results.map(async (pokemon) => {
+            const pokeData = await fetch(pokemon.url);
+            const pokeDataJSON = await pokeData.json();
+            console.log(pokeDataJSON.sprites.front_default);
+            pokemonSpriteURLs.push({id:pokeDataJSON.id, url:pokeDataJSON.sprites.front_default});
           });
 
-
-          Promise.all(fetches).then(() => {
-            setCards(pokemonSpriteURLs);
-          });
-        });
+      Promise.all(fetches).then(() => {
+        setCards(pokemonSpriteURLs);
+        setLoading(false);
+        console.log("Done loading");
       });
     
   }
@@ -72,6 +68,10 @@ function App() {
         }
   }
 
+  function BuildCards(){
+    return 
+  }
+
 const hasFetched = useRef(false);
 
 useEffect(() => {
@@ -82,23 +82,20 @@ useEffect(() => {
 }, []);
 
 
-
-  
-
-
-
   return (
   <>
     <h2>Current Score: {score}</h2>
     <h2>Best Score: {bestScore}</h2>
     <div className="card-container">
-        {cards.map((url) => {
-        return <div className="card" key = {url} ref={el => myRefs.current[url] = el}
-        onClick={() => handleClick(url)}>
-        <img src={url} alt="" />
+        {loading === false ?
+        (cards.map((cardData) => 
+        <div className="card" key = {cardData.id} ref={el => myRefs.current[cardData.id] = el}
+        onClick={() => handleClick(cardData.id)}>
+        <img src={cardData.url} alt="" />
         
-        </div>;
-      })}
+        </div>
+      ))
+      : (<div>Loading...</div>)}
       </div>
   </>
   )
