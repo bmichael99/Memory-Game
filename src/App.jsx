@@ -68,10 +68,6 @@ function App() {
         }
   }
 
-  function BuildCards(){
-    return 
-  }
-
 const hasFetched = useRef(false);
 
 useEffect(() => {
