@@ -18,23 +18,35 @@ function App() {
     myRefs.current = {};
     let offset = randomNum();
     const pokemonSpriteURLs = [];
+    setLoading(true);
 
       const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10&offset=' + offset);
       const data = await response.json();
-      setLoading(true);
+      
+      
       const fetches = data.results.map(async (pokemon) => {
             const pokeData = await fetch(pokemon.url);
             const pokeDataJSON = await pokeData.json();
-            console.log(pokeDataJSON.sprites.front_default);
-            pokemonSpriteURLs.push({id:pokeDataJSON.id, url:pokeDataJSON.sprites.front_default});
+            const url = pokeDataJSON.sprites.front_default;
+            pokemonSpriteURLs.push({id:pokeDataJSON.id, url:url});
           });
 
-      Promise.all(fetches).then(() => {
-        setCards(pokemonSpriteURLs);
-        setLoading(false);
-        console.log("Done loading");
+      await Promise.all(fetches);
+
+      const preloadImages = pokemonSpriteURLs.map((pokeData) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(); 
+          img.onerror = () => resolve(); 
+          img.src = pokeData.url;
+        });
       });
-    
+
+      await Promise.all(preloadImages);
+
+      
+      setCards(pokemonSpriteURLs);
+      setLoading(false);
   }
 
   function handleClick(ID){
